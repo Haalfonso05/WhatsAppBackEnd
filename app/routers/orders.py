@@ -139,8 +139,10 @@ def update_order_status(id_order: int, data: StatusUpdate, db: Session = Depends
     customer_doc = row[0]
 
     existing = db.execute(text(f"""
-        SELECT id FROM {DB_SCHEMA}.delivery WHERE order_id = :oid LIMIT 1
+        SELECT id, delivery_status FROM {DB_SCHEMA}.delivery WHERE order_id = :oid LIMIT 1
     """), {"oid": id_order}).fetchone()
+    estado_previo = existing[1] if existing else None
+    cambio_estado = estado_previo != db_status
 
     if existing:
         db.execute(text(f"""
@@ -159,7 +161,7 @@ def update_order_status(id_order: int, data: StatusUpdate, db: Session = Depends
     db.commit()
 
     
-    if db_status == 'D':
+    if db_status == 'D' and cambio_estado:
         detalles = db.execute(text(f"""
             SELECT product_id, amount
             FROM {DB_SCHEMA}.order_detail
@@ -175,7 +177,7 @@ def update_order_status(id_order: int, data: StatusUpdate, db: Session = Depends
 
         db.commit()
 
-    if db_status in ('E', 'D'):
+    if db_status in ('E', 'D') and cambio_estado:
         cliente = db.execute(text(f"""
             SELECT c.phone_number, c.name_1, c.last_name_1
             FROM {DB_SCHEMA}.customer c
