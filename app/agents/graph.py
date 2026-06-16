@@ -12,6 +12,7 @@ def router_intencion(state) -> str:
         "crear_pedido": "pedidos",
         "estado_pedido": "pedidos",
         "registro": "atencion",
+        "saludo": "atencion",
         "fuera_de_tema": "fuera_de_tema",
         "ambigua": "aclarar",
     }.get(state.get("intencion"), "fuera_de_tema")

@@ -32,7 +32,8 @@ def clasificar_texto(entrada: str, contexto: str = "") -> str:
         "Eres un clasificador de intención para el chatbot de una tienda. "
         "Usa el contexto previo si ayuda a desambiguar. Responde EXACTAMENTE una "
         "etiqueta, sin explicaciones ni puntuación:\n"
-        "consulta_producto, crear_pedido, estado_pedido, registro, fuera_de_tema, ambigua\n"
+        "consulta_producto, crear_pedido, estado_pedido, registro, saludo, fuera_de_tema, ambigua\n"
+        "Usa 'saludo' para saludos o cortesia (hola, buenos dias, gracias). "
         "Usa 'ambigua' solo si el mensaje es demasiado vago para decidir."
     )
     user = entrada if not contexto else "Contexto previo:\n" + contexto + "\n\nMensaje actual: " + entrada
@@ -47,7 +48,7 @@ def clasificar_texto(entrada: str, contexto: str = "") -> str:
         if hasattr(bloque, "text"):
             etiqueta = bloque.text.strip().lower()
             break
-    validas = {"consulta_producto", "crear_pedido", "estado_pedido", "registro", "fuera_de_tema", "ambigua"}
+    validas = {"consulta_producto", "crear_pedido", "estado_pedido", "registro", "saludo", "fuera_de_tema", "ambigua"}
     return etiqueta if etiqueta in validas else "fuera_de_tema"
 
 
