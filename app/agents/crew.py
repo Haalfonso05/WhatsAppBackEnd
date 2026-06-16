@@ -40,7 +40,8 @@ class RegistrarClienteTool(BaseTool):
 
 class BuscarProductosTool(BaseTool):
     name: str = "buscar_productos"
-    description: str = "Busca productos disponibles en el inventario por nombre; devuelve precio y stock."
+    description: str = ("Busca productos por nombre; tolera mayusculas, tildes, plurales y nombres "
+                        "parciales, y puede devolver varias coincidencias con precio y stock.")
 
     def _run(self, nombre: str) -> str:
         return _buscar_productos(nombre)
@@ -106,8 +107,8 @@ t_ver_carrito = VerCarritoTool()
 # --------------------------------------------------------------------------- #
 agente_atencion = Agent(
     role="Agente de atencion al cliente de Palmita Express",
-    goal="Saludar, identificar y registrar clientes de forma amable y rapida.",
-    backstory="Eres la primera cara de la tienda. Reconoces clientes por su telefono y registras a los nuevos; si no quieren dar datos, los atiendes como invitados.",
+    goal="Saludar, verificar si el cliente existe y registrar a los nuevos pidiendo todos sus datos, o atenderlos como invitado.",
+    backstory="Reconoces al cliente con buscar_cliente. Si NO existe, pidele uno a uno nombre, apellido, cedula y direccion, y luego registralo con registrar_cliente. Si no quiere dar sus datos, ofrecele continuar como invitado (registrar_cliente con documento='invitado'). Si ya existe, saludalo por su nombre.",
     tools=[t_buscar_cliente, t_registrar_cliente],
     llm=_llm,
     allow_delegation=True,
@@ -117,7 +118,7 @@ agente_atencion = Agent(
 agente_inventario = Agent(
     role="Agente de inventario de Palmita Express",
     goal="Informar disponibilidad y SIEMPRE agregar al carrito los productos que el cliente pida.",
-    backstory="Conoces el catalogo al detalle. Cuando el cliente menciona un producto con cantidad, primero verificas stock y luego OBLIGATORIAMENTE lo agregas al carrito compartido con agregar_al_carrito. Si no existe, ofreces alternativas.",
+    backstory="Conoces el catalogo al detalle. No exijas el nombre exacto: la busqueda ignora mayusculas, tildes y plurales. Si hay varias coincidencias (por ejemplo 'chorizos'), muestralas TODAS como opciones con su precio. Cuando el cliente elige un producto con cantidad, verificas stock y lo agregas al carrito con agregar_al_carrito. Si no hay ninguna coincidencia, ofreces alternativas similares.",
     tools=[t_buscar_productos, t_verificar_stock, t_agregar_carrito],
     llm=_llm,
     allow_delegation=True,
