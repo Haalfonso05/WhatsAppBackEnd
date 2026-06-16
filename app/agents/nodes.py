@@ -1,0 +1,155 @@
+"""Nodos del grafo multiagente (HU-049 + HU-050 + HU-051)."""
+
+from app.agents.llm import clasificar_texto, correr_agente
+from app.agents import memoria
+
+MENSAJE_ERROR = (
+    "Uy, tuve un problema procesando tu mensaje. "
+    "Puedes intentarlo de nuevo en un momento, por favor?"
+)
+
+FUERA_DE_TEMA = (
+    "Solo puedo ayudarte con productos, pedidos, precios y entregas de "
+    "Palmita Express. Que te gustaria pedir hoy?"
+)
+
+ACLARAR = (
+    "No estoy segura de lo que necesitas. Quieres consultar un producto, "
+    "hacer un pedido, ver el estado de tu pedido o registrarte?"
+)
+
+
+def nodo_seguro(fn):
+    def envuelto(state):
+        try:
+            return fn(state)
+        except Exception as e:
+            print("[multiagente] Error en nodo " + fn.__name__ + ": " + str(e))
+            return {"error": True, "respuesta": MENSAJE_ERROR}
+    return envuelto
+
+
+
+@nodo_seguro
+def recepcion(state):
+    telefono = state["telefono"]
+    entrada = state["entrada"]
+
+    
+    if memoria.expirada(telefono):
+        memoria.limpiar(telefono)
+
+    cliente = memoria.get_cliente(telefono)
+    if not cliente:
+        from app.routers.webhook import buscar_cliente
+        raw = buscar_cliente(telefono)
+        cliente = {"raw": raw, "encontrado": raw != "CLIENTE_NO_ENCONTRADO"}
+        memoria.set_cliente(telefono, cliente)
+
+    memoria.agregar_historial(telefono, "user", entrada)
+    memoria.tocar(telefono)
+
+    return {
+        "mensajes": [{"role": "user", "content": entrada}],
+        "cliente": cliente,
+        "carrito": memoria.get_carrito(telefono),
+        "error": False,
+    }
+
+
+
+@nodo_seguro
+def clasificar(state):
+    return {"intencion": clasificar_texto(state["entrada"], _contexto(state["telefono"]))}
+
+
+
+_SYS_INVENTARIO = (
+    "Eres el agente de inventario de Palmita Express. Ayudas al cliente a saber "
+    "si hay disponibilidad, precio y stock. Usa buscar_productos y verificar_stock, "
+    "y agrega al carrito lo disponible. Responde en espanol, amable y breve. "
+    "El telefono del cliente es: {telefono}."
+)
+_SYS_PEDIDOS = (
+    "Eres el agente de pedidos de Palmita Express. Revisa el carrito, verifica stock "
+    "y muestra un resumen pidiendo confirmacion antes de crear el pedido. "
+    "Responde en espanol, amable y breve. El telefono del cliente es: {telefono}."
+)
+_SYS_ATENCION = (
+    "Eres el agente de atencion de Palmita Express. Saludas, identificas y registras "
+    "clientes. Usa buscar_cliente y registrar_cliente. Si no quiere dar datos, "
+    "ofrece continuar como invitado. Responde en espanol, amable y breve. "
+    "El telefono del cliente es: {telefono}."
+)
+
+
+def _contexto(telefono):
+    
+    msgs = memoria.get_historial(telefono)
+    return "\n".join(m["role"] + ": " + m["content"] for m in msgs)
+
+
+def _agente(state, fn_crew, system_tpl, nombres_herramientas):
+    telefono = state["telefono"]
+    try:
+        from app.agents import crew
+        texto = getattr(crew, fn_crew)(state["entrada"], telefono, _contexto(telefono))
+    except Exception as e:
+        print("[crewai] Fallback a Haiku directo en " + fn_crew + ": " + str(e))
+        system = system_tpl.format(telefono=telefono)
+        texto = correr_agente(system, memoria.get_historial(telefono), nombres_herramientas)
+
+    memoria.agregar_historial(telefono, "assistant", texto)
+    memoria.tocar(telefono)
+
+    return {
+        "mensajes": [{"role": "assistant", "content": texto}],
+        "carrito": memoria.get_carrito(telefono),
+        "respuesta": texto,
+        "error": False,
+    }
+
+
+@nodo_seguro
+def agente_inventario(state):
+    return _agente(state, "responder_inventario", _SYS_INVENTARIO,
+                   ["buscar_productos", "verificar_stock"])
+
+
+@nodo_seguro
+def agente_pedidos(state):
+    return _agente(state, "responder_pedidos", _SYS_PEDIDOS,
+                   ["crear_pedido", "consultar_pedidos", "verificar_stock"])
+
+
+@nodo_seguro
+def agente_atencion(state):
+    return _agente(state, "responder_atencion", _SYS_ATENCION,
+                   ["buscar_cliente", "registrar_cliente"])
+
+
+# 4. Nodos terminales.
+def fuera_de_tema(state):
+    memoria.agregar_historial(state["telefono"], "assistant", FUERA_DE_TEMA)
+    return {
+        "mensajes": [{"role": "assistant", "content": FUERA_DE_TEMA}],
+        "respuesta": FUERA_DE_TEMA,
+    }
+
+
+def aclarar(state):
+    memoria.agregar_historial(state["telefono"], "assistant", ACLARAR)
+    return {
+        "mensajes": [{"role": "assistant", "content": ACLARAR}],
+        "respuesta": ACLARAR,
+    }
+
+
+def responder(state):
+    if not state.get("respuesta"):
+        return {"respuesta": MENSAJE_ERROR}
+    return {}
+
+
+def manejar_error(state):
+    return {"respuesta": state.get("respuesta") or MENSAJE_ERROR}

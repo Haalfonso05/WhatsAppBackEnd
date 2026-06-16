@@ -1,0 +1,13 @@
+# Dependencias reales del backend Palmita Express
+fastapi>=0.115
+uvicorn>=0.30
+SQLAlchemy>=2.0
+psycopg2-binary>=2.9
+anthropic>=0.40
+httpx>=0.27
+python-dotenv>=1.0
+pydantic>=2.11.9,<2.13
+# Orquestador multiagente (HU-049)
+langgraph>=1.0
+# Agentes especializados (HU-050)
+crewai
