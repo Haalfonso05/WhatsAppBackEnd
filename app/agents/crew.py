@@ -73,7 +73,7 @@ class ConsultarPedidosTool(BaseTool):
         return _consultar_pedidos(telefono)
 
 
-# --- Herramientas de carrito compartido (HU-051) --- #
+
 class AgregarAlCarritoTool(BaseTool):
     name: str = "agregar_al_carrito"
     description: str = ("Agrega un producto y cantidad al carrito compartido del cliente. "
@@ -102,9 +102,9 @@ t_agregar_carrito = AgregarAlCarritoTool()
 t_ver_carrito = VerCarritoTool()
 
 
-# --------------------------------------------------------------------------- #
-# Agentes especializados (rol / objetivo / contexto + herramientas).
-# --------------------------------------------------------------------------- #
+
+
+
 agente_atencion = Agent(
     role="Agente de atencion al cliente de Palmita Express",
     goal="Saludar, verificar si el cliente existe y registrar a los nuevos pidiendo todos sus datos, o atenderlos como invitado.",
