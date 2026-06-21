@@ -1,3 +1,4 @@
+# Nodos del grafo multiagente
 """Nodos del grafo multiagente (HU-049 + HU-050 + HU-051)."""
 
 from app.agents.llm import clasificar_texto, correr_agente
@@ -19,7 +20,9 @@ ACLARAR = (
 )
 
 
+# decorador que captura errores dentro de un nodo
 def nodo_seguro(fn):
+    # funcion envuelto
     def envuelto(state):
         try:
             return fn(state)
@@ -31,6 +34,7 @@ def nodo_seguro(fn):
 
 
 @nodo_seguro
+# nodo de recepcion: carga memoria e identifica al cliente
 def recepcion(state):
     telefono = state["telefono"]
     entrada = state["entrada"]
@@ -59,6 +63,7 @@ def recepcion(state):
 
 
 @nodo_seguro
+# nodo que clasifica la intencion del mensaje
 def clasificar(state):
     return {"intencion": clasificar_texto(state["entrada"], _contexto(state["telefono"]))}
 
@@ -85,12 +90,14 @@ _SYS_ATENCION = (
 )
 
 
+# arma el contexto de la conversacion desde la memoria
 def _contexto(telefono):
     
     msgs = memoria.get_historial(telefono)
     return "\n".join(m["role"] + ": " + m["content"] for m in msgs)
 
 
+# ejecuta un agente (CrewAI) con respaldo a Claude directo
 def _agente(state, fn_crew, system_tpl, nombres_herramientas):
     telefono = state["telefono"]
     try:
@@ -113,18 +120,21 @@ def _agente(state, fn_crew, system_tpl, nombres_herramientas):
 
 
 @nodo_seguro
+# nodo del agente de inventario
 def agente_inventario(state):
     return _agente(state, "responder_inventario", _SYS_INVENTARIO,
                    ["buscar_productos", "verificar_stock"])
 
 
 @nodo_seguro
+# nodo del agente de pedidos
 def agente_pedidos(state):
     return _agente(state, "responder_pedidos", _SYS_PEDIDOS,
                    ["crear_pedido", "consultar_pedidos", "verificar_stock"])
 
 
 @nodo_seguro
+# nodo del agente de atencion al cliente
 def agente_atencion(state):
     return _agente(state, "responder_atencion", _SYS_ATENCION,
                    ["buscar_cliente", "registrar_cliente"])
@@ -139,6 +149,7 @@ def fuera_de_tema(state):
     }
 
 
+# nodo que pide aclaracion cuando el mensaje es ambiguo
 def aclarar(state):
     memoria.agregar_historial(state["telefono"], "assistant", ACLARAR)
     return {
@@ -147,11 +158,13 @@ def aclarar(state):
     }
 
 
+# nodo final que entrega la respuesta
 def responder(state):
     if not state.get("respuesta"):
         return {"respuesta": MENSAJE_ERROR}
     return {}
 
 
+# nodo que maneja los errores del grafo
 def manejar_error(state):
     return {"respuesta": state.get("respuesta") or MENSAJE_ERROR}

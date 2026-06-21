@@ -1,3 +1,4 @@
+# Definicion de agentes y herramientas con CrewAI
 """Agentes especializados con CrewAI (HU-050) + carrito compartido (HU-051)."""
 
 from crewai import Agent, Task, Crew, LLM
@@ -24,70 +25,85 @@ class BuscarClienteTool(BaseTool):
     name: str = "buscar_cliente"
     description: str = "Busca si un cliente ya esta registrado por su numero de telefono."
 
+    # ejecuta la herramienta
     def _run(self, telefono: str) -> str:
         return _buscar_cliente(telefono)
 
 
+# clase RegistrarClienteTool
 class RegistrarClienteTool(BaseTool):
     name: str = "registrar_cliente"
     description: str = ("Registra un cliente nuevo con nombre, apellido, documento y "
                         "direccion. Usa documento='invitado' si no quiere dar datos.")
 
+    # ejecuta la herramienta
     def _run(self, telefono: str, nombre: str, apellido: str,
              documento: str, direccion: str = "") -> str:
         return _registrar_cliente(telefono, nombre, apellido, documento, direccion)
 
 
+# clase BuscarProductosTool
 class BuscarProductosTool(BaseTool):
     name: str = "buscar_productos"
     description: str = ("Busca productos por nombre; tolera mayusculas, tildes, plurales y nombres "
                         "parciales, y puede devolver varias coincidencias con precio y stock.")
 
+    # ejecuta la herramienta
     def _run(self, nombre: str) -> str:
         return _buscar_productos(nombre)
 
 
+# clase VerificarStockTool
 class VerificarStockTool(BaseTool):
     name: str = "verificar_stock"
     description: str = "Verifica si hay suficiente stock de un producto para una cantidad dada."
 
+    # ejecuta la herramienta
     def _run(self, nombre_producto: str, cantidad: int) -> str:
         return _verificar_stock(nombre_producto, cantidad)
 
 
+# clase CrearPedidoTool
 class CrearPedidoTool(BaseTool):
     name: str = "crear_pedido"
     description: str = ("Crea un pedido en la base de datos. 'productos' es una lista de "
                         "objetos con 'nombre_producto' y 'cantidad'.")
 
+    # ejecuta la herramienta
     def _run(self, telefono_cliente: str, productos: list,
              direccion_entrega: str = "", notas: str = "") -> str:
         return _crear_pedido(telefono_cliente, productos, direccion_entrega, notas)
 
 
+# clase ConsultarPedidosTool
 class ConsultarPedidosTool(BaseTool):
     name: str = "consultar_pedidos"
     description: str = "Consulta los pedidos recientes de un cliente y su estado."
 
+    # ejecuta la herramienta
     def _run(self, telefono: str) -> str:
         return _consultar_pedidos(telefono)
 
 
 
+# clase AgregarAlCarritoTool
 class AgregarAlCarritoTool(BaseTool):
     name: str = "agregar_al_carrito"
     description: str = ("Agrega un producto y cantidad al carrito compartido del cliente. "
                         "Usala SIEMPRE que el cliente pida un producto. El carrito queda "
                         "disponible para los demas agentes.")
 
+    # ejecuta la herramienta
     def _run(self, telefono: str, nombre_producto: str, cantidad: int) -> str:
         return memoria.agregar_item(telefono, nombre_producto, cantidad)
 
 
+# clase VerCarritoTool
 class VerCarritoTool(BaseTool):
     name: str = "ver_carrito"
     description: str = "Muestra el carrito actual del cliente (compartido entre agentes)."
 
+    # ejecuta la herramienta
     def _run(self, telefono: str) -> str:
         return memoria.ver_carrito(telefono)
 
@@ -157,13 +173,16 @@ def _ejecutar(agente, mensaje, telefono, contexto=""):
     return str(crew.kickoff()).strip()
 
 
+# corre el crew del agente de atencion
 def responder_atencion(mensaje, telefono, contexto=""):
     return _ejecutar(agente_atencion, mensaje, telefono, contexto)
 
 
+# corre el crew del agente de inventario
 def responder_inventario(mensaje, telefono, contexto=""):
     return _ejecutar(agente_inventario, mensaje, telefono, contexto)
 
 
+# corre el crew del agente de pedidos
 def responder_pedidos(mensaje, telefono, contexto=""):
     return _ejecutar(agente_pedidos, mensaje, telefono, contexto)

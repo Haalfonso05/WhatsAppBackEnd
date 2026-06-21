@@ -1,17 +1,21 @@
+# Modelos ORM de las tablas de la base de datos
 from sqlalchemy import Column, String, Numeric, Integer, Date, TIMESTAMP, Text, ForeignKey, DateTime
 from sqlalchemy.sql import func
 from app.database import Base, DB_SCHEMA
 
+# clase PaymentMethod
 class PaymentMethod(Base):
     __tablename__ = "payment_method"
     id_payment_method = Column(Integer, primary_key=True, autoincrement=True)
     name              = Column(String(20), nullable=False)
 
+# clase ProductType
 class ProductType(Base):
     __tablename__ = "product_type"
     id_product_type = Column(Integer, primary_key=True, autoincrement=True)
     name            = Column(String(20), nullable=False)
 
+# clase Customer
 class Customer(Base):
     __tablename__ = "customer"
     document     = Column(String(10), primary_key=True)
@@ -22,6 +26,7 @@ class Customer(Base):
     address      = Column(Text)
     phone_number = Column(String(15), nullable=False)
 
+# clase Product
 class Product(Base):
     __tablename__ = "product"
     id_product      = Column(Integer, primary_key=True, autoincrement=True)
@@ -31,6 +36,7 @@ class Product(Base):
     available       = Column(String(1), nullable=False, default="Y")
     product_type_id = Column(Integer, ForeignKey(f"{DB_SCHEMA}.product_type.id_product_type"), nullable=False)
 
+# clase Employe
 class Employe(Base):
     __tablename__ = "employe"
     id_card            = Column(Integer, primary_key=True, autoincrement=True)
@@ -47,12 +53,14 @@ class Employe(Base):
     email              = Column(String(120), unique=True)
     password_hash      = Column(String(128))
 
+# clase Courier
 class Courier(Base):
     __tablename__ = "courier"
     id_courier = Column(Integer, primary_key=True, autoincrement=True)
     name       = Column(String(90), nullable=False)
     id_card    = Column(String(20), nullable=False)
 
+# clase Order
 class Order(Base):
     __tablename__ = "order"
     id_order          = Column(Integer, primary_key=True, autoincrement=True)
@@ -64,6 +72,7 @@ class Order(Base):
     total             = Column(Numeric(12,2), nullable=False)
     payment_method_id = Column(Integer, ForeignKey(f"{DB_SCHEMA}.payment_method.id_payment_method"), nullable=False)
 
+# clase OrderDetail
 class OrderDetail(Base):
     __tablename__ = "order_detail"
     line_number       = Column(Integer, primary_key=True, autoincrement=True)
@@ -74,6 +83,7 @@ class OrderDetail(Base):
     sale_price        = Column(Numeric(12,2), nullable=False)
     subtotal          = Column(Numeric(12,2), nullable=False)
 
+# clase Delivery
 class Delivery(Base):
     __tablename__ = "delivery"
     id                = Column(Integer, primary_key=True, autoincrement=True)
@@ -89,6 +99,7 @@ class Delivery(Base):
     order_id          = Column(Integer, ForeignKey(f"{DB_SCHEMA}.order.id_order"), nullable=False)
     value             = Column(Numeric(12,2), nullable=False)
 
+# clase Credit
 class Credit(Base):
     __tablename__ = "credit"
     id                = Column(Integer, primary_key=True, autoincrement=True)

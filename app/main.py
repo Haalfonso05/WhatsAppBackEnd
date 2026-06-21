@@ -1,3 +1,4 @@
+# Configuracion de la app FastAPI y registro de routers
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import products, orders, customers, credits, webhook
@@ -19,5 +20,6 @@ app.include_router(credits.router)
 app.include_router(webhook.router)
 
 @app.get("/")
+# funcion root
 def root():
     return {"status": "ok"}

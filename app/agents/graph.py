@@ -1,9 +1,11 @@
+# Construccion del grafo de estados con LangGraph
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
 
 from app.agents.state import ConversationState
 from app.agents import nodes
 
+# decide a que agente enviar segun la intencion
 def router_intencion(state) -> str:
     if state.get("error"):
         return "error"
@@ -18,9 +20,11 @@ def router_intencion(state) -> str:
     }.get(state.get("intencion"), "fuera_de_tema")
 
 
+# enruta al manejo de error si algo fallo
 def enrutar_si_error(state) -> str:
     return "error" if state.get("error") else "ok"
 
+# construye el grafo de estados con LangGraph
 def construir_grafo():
     g = StateGraph(ConversationState)
     g.add_node("recepcion", nodes.recepcion)
@@ -67,6 +71,7 @@ def construir_grafo():
 grafo = construir_grafo()
 
 
+# procesa un mensaje del cliente a traves del grafo multiagente
 def procesar_mensaje(telefono: str, texto: str) -> str:
     config = {"configurable": {"thread_id": telefono}}
     resultado = grafo.invoke(

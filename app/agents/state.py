@@ -1,7 +1,9 @@
+# Estado compartido del grafo multiagente
 import operator
 from typing import Annotated, Optional, TypedDict
 
 
+# clase ConversationState
 class ConversationState(TypedDict, total=False):
     telefono: str                      
     entrada: str                       

@@ -1,3 +1,4 @@
+# Conexion y sesion de la base de datos (SQLAlchemy)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from dotenv import load_dotenv
@@ -18,9 +19,11 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# clase Base
 class Base(DeclarativeBase):
     __table_args__ = {"schema": DB_SCHEMA}
 
+# entrega una sesion de la base de datos
 def get_db():
     db = SessionLocal()
     try:

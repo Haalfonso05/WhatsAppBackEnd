@@ -1,3 +1,4 @@
+# Webhook de WhatsApp y herramientas de IA
 import os
 import httpx
 import anthropic
@@ -21,12 +22,14 @@ _conversations: dict[str, list] = {}
 
 
 
+# funcion get db
 def _get_db():
     from app.database import SessionLocal
     return SessionLocal()
 
 
 
+# busca un cliente por su numero de telefono
 def buscar_cliente(telefono: str) -> str:
     
     db = _get_db()
@@ -49,6 +52,7 @@ def buscar_cliente(telefono: str) -> str:
     finally:
         db.close()
 
+# registra un cliente nuevo en la base de datos
 def registrar_cliente(telefono: str, nombre: str, apellido: str,
                       documento: str, direccion: str = "") -> str:
     
@@ -85,6 +89,7 @@ def registrar_cliente(telefono: str, nombre: str, apellido: str,
     finally:
         db.close()
 
+# consulta los ultimos pedidos de un cliente
 def consultar_pedidos(telefono: str) -> str:
     
     db = _get_db()
@@ -119,10 +124,12 @@ def consultar_pedidos(telefono: str) -> str:
     finally:
         db.close()
 
+# busca productos por nombre o categoria (ignora tildes y mayusculas)
 def buscar_productos(nombre: str) -> str:
     
     db = _get_db()
     try:
+        # funcion normalizar
         def normalizar(p):
             p = p.lower().strip()
             if p.endswith('es') and len(p) > 4:
@@ -157,6 +164,7 @@ def buscar_productos(nombre: str) -> str:
     finally:
         db.close()
 
+# verifica el stock disponible de un producto
 def verificar_stock(nombre_producto: str, cantidad: int) -> str:
     
     db = _get_db()
@@ -180,6 +188,7 @@ def verificar_stock(nombre_producto: str, cantidad: int) -> str:
     finally:
         db.close()
 
+# crea un pedido con sus productos en la base de datos
 def crear_pedido(telefono_cliente: str, productos: list,
                  direccion_entrega: str = "", notas: str = "") -> str:
     
@@ -401,6 +410,7 @@ IMPORTANTE: Solo puedes ayudar con temas relacionados con la tienda — producto
 
 
 
+# llama al modelo Claude como respaldo cuando falla el multiagente
 def _call_claude(phone: str, user_message: str) -> str:
     history = _conversations.get(phone, [])
     history.append({"role": "user", "content": f"[phone:{phone}] {user_message}"})
@@ -456,6 +466,7 @@ def _call_claude(phone: str, user_message: str) -> str:
 
 
 
+# envia un mensaje de texto por la API de WhatsApp
 def _send_whatsapp(to: str, message: str):
     url = f"https://graph.facebook.com/v21.0/{PHONE_NUMBER_ID}/messages"
     headers = {
@@ -474,6 +485,7 @@ def _send_whatsapp(to: str, message: str):
 
 
 @router.get("/")
+# verifica el webhook de WhatsApp (challenge de Meta)
 def verify_webhook(request: Request):
     params = dict(request.query_params)
     mode      = params.get("hub.mode")
@@ -484,6 +496,7 @@ def verify_webhook(request: Request):
     return Response(content="Forbidden", status_code=403)
 
 @router.post("/")
+# recibe y procesa los mensajes entrantes de WhatsApp
 async def receive_message(request: Request):
     body = await request.json()
     try:

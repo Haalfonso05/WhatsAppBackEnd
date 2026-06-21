@@ -1,3 +1,4 @@
+# Endpoints CRUD de clientes
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -8,10 +9,12 @@ from typing import List
 router = APIRouter(prefix="/customers", tags=["Customers"])
 
 @router.get("/all", response_model=List[CustomerResponse])
+# funcion get all customers
 def get_all_customers(db: Session = Depends(get_db)):
     return db.query(Customer).all()
 
 @router.get("/")
+# lista los clientes con paginacion y busqueda
 def get_customers(page: int = 1, size: int = 25, search: str = "", db: Session = Depends(get_db)):
     import math
     q = db.query(Customer)
@@ -27,6 +30,7 @@ def get_customers(page: int = 1, size: int = 25, search: str = "", db: Session =
     return {"items": [CustomerResponse.model_validate(i) for i in items], "total": total, "pages": pages}
 
 @router.get("/{document}", response_model=CustomerResponse)
+# funcion get customer
 def get_customer(document: str, db: Session = Depends(get_db)):
     customer = db.query(Customer).filter(Customer.document == document).first()
     if not customer:
@@ -34,6 +38,7 @@ def get_customer(document: str, db: Session = Depends(get_db)):
     return customer
 
 @router.post("/", response_model=CustomerResponse)
+# crea un cliente
 def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
     existe = db.query(Customer).filter(Customer.document == customer.document).first()
     if existe:
@@ -45,6 +50,7 @@ def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
     return nuevo
 
 @router.put("/{document}", response_model=CustomerResponse)
+# actualiza un cliente
 def update_customer(document: str, data: CustomerCreate, db: Session = Depends(get_db)):
     customer = db.query(Customer).filter(Customer.document == document).first()
     if not customer:
@@ -56,6 +62,7 @@ def update_customer(document: str, data: CustomerCreate, db: Session = Depends(g
     return customer
 
 @router.delete("/{document}")
+# funcion delete customer
 def delete_customer(document: str, db: Session = Depends(get_db)):
     customer = db.query(Customer).filter(Customer.document == document).first()
     if not customer:

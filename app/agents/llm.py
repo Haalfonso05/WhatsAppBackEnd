@@ -1,3 +1,4 @@
+# Cliente de Claude: clasificador y agente de respaldo
 import os
 import anthropic
 
@@ -24,9 +25,11 @@ _DISPATCH = {
 }
 
 
+# filtra las herramientas por su nombre
 def _tools_por_nombre(nombres: list[str]) -> list:
     return [t for t in _tools if t["name"] in nombres]
 
+# clasifica la intencion del mensaje del cliente
 def clasificar_texto(entrada: str, contexto: str = "") -> str:
     system = (
         "Eres un clasificador de intención para el chatbot de una tienda. "
@@ -52,6 +55,7 @@ def clasificar_texto(entrada: str, contexto: str = "") -> str:
     return etiqueta if etiqueta in validas else "fuera_de_tema"
 
 
+# ejecuta el agente de IA con sus herramientas (respaldo directo)
 def correr_agente(system: str, historial: list, nombres_herramientas: list[str]) -> str:
     herramientas = _tools_por_nombre(nombres_herramientas)
     mensajes = [{"role": m["role"], "content": m["content"]} for m in historial]

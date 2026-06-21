@@ -1,3 +1,4 @@
+# Endpoints de pedidos y cambio de estado
 import os
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
@@ -12,6 +13,7 @@ from typing import List
 WHATSAPP_TOKEN  = os.getenv("WHATSAPP_TOKEN", "")
 PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
 
+# envia un mensaje de texto por la API de WhatsApp
 def _send_whatsapp(to: str, message: str):
     if not WHATSAPP_TOKEN or not PHONE_NUMBER_ID:
         return
@@ -21,6 +23,7 @@ def _send_whatsapp(to: str, message: str):
     with httpx.Client() as c:
         c.post(url, json=payload, headers=headers)
 
+# clase StatusUpdate
 class StatusUpdate(BaseModel):
     status: str 
 
@@ -30,6 +33,7 @@ router = APIRouter(prefix="/orders", tags=["Orders"])
 
 _DISPLAY_TO_DB = {'En espera': 'P', 'Enviado': 'E', 'Listo': 'D'}
 
+# consulta SQL de pedidos con filtros y paginacion
 def _orders_query(db, DB_SCHEMA, search='', status='', page=1, size=20):
     import math
     search_clause = "AND (c.name_1 || ' ' || c.last_name_1 ILIKE :search OR p.name ILIKE :search)" if search else ""
@@ -89,10 +93,12 @@ def _orders_query(db, DB_SCHEMA, search='', status='', page=1, size=20):
     return {'items': [dict(r) for r in rows], 'total': total, 'pages': pages}
 
 @router.get("/")
+# lista los pedidos con paginacion y filtro por estado
 def get_orders(page: int = 1, size: int = 20, search: str = "", status: str = "", db: Session = Depends(get_db)):
     return _orders_query(db, DB_SCHEMA, search=search, status=status, page=page, size=size)
 
 @router.get("/{id_order}", response_model=OrderResponse)
+# obtiene un pedido por su id
 def get_order(id_order: int, db: Session = Depends(get_db)):
     order = db.query(Order).filter(Order.id_order == id_order).first()
     if not order:
@@ -100,6 +106,7 @@ def get_order(id_order: int, db: Session = Depends(get_db)):
     return order
 
 @router.post("/", response_model=OrderResponse)
+# crea un pedido
 def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     nueva = Order(**order.model_dump())
     db.add(nueva)
@@ -108,6 +115,7 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     return nueva
 
 @router.put("/{id_order}", response_model=OrderResponse)
+# actualiza un pedido
 def update_order(id_order: int, data: OrderCreate, db: Session = Depends(get_db)):
     order = db.query(Order).filter(Order.id_order == id_order).first()
     if not order:
@@ -119,6 +127,7 @@ def update_order(id_order: int, data: OrderCreate, db: Session = Depends(get_db)
     return order
 
 @router.delete("/{id_order}")
+# elimina un pedido
 def delete_order(id_order: int, db: Session = Depends(get_db)):
     order = db.query(Order).filter(Order.id_order == id_order).first()
     if not order:
@@ -128,6 +137,7 @@ def delete_order(id_order: int, db: Session = Depends(get_db)):
     return {"message": "Orden eliminada"}
 
 @router.patch("/{id_order}/status")
+# actualiza el estado del pedido y notifica al cliente
 def update_order_status(id_order: int, data: StatusUpdate, db: Session = Depends(get_db)):
     db_status = _STATUS_MAP.get(data.status, 'P')
 
@@ -205,6 +215,7 @@ def update_order_status(id_order: int, data: StatusUpdate, db: Session = Depends
     return {"status": data.status}
 
 @router.get("/{id_order}/details")
+# obtiene el detalle (productos) de un pedido
 def get_order_details(id_order: int, db: Session = Depends(get_db)):
     result = db.execute(text(f"""
         SELECT
@@ -220,6 +231,7 @@ def get_order_details(id_order: int, db: Session = Depends(get_db)):
     return [dict(row) for row in rows]
 
 @router.post("/{id_order}/details", response_model=OrderDetailResponse)
+# agrega un detalle (producto) a un pedido
 def add_order_detail(id_order: int, detail: OrderDetailCreate, db: Session = Depends(get_db)):
     order = db.query(Order).filter(Order.id_order == id_order).first()
     if not order:

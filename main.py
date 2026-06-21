@@ -1,3 +1,4 @@
+# Punto de entrada de la API FastAPI
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
@@ -28,5 +29,6 @@ from app.routers import webhook
 app.include_router(webhook.router)
 
 @app.get("/")
+# funcion root
 def root():
     return {"message": "WhatsApp Commerce API corriendo"}
